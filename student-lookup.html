@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Portal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f4f6f8;
+        }
+        .topbar {
+            background: #003366;
+            color: white;
+            padding: 15px;
+            font-size: 1.2em;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            max-width: 1000px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 0 6px rgba(0,0,0,0.1);
+        }
+        .sidebar {
+            width: 250px;
+            background: #e9ecef;
+            padding: 20px;
+            border-right: 1px solid #ccc;
+        }
+        .sidebar h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #003366;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .sidebar ul li {
+            padding: 8px 0;
+            cursor: default;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+        }
+        .login-box {
+            width: 300px;
+            margin: 100px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        input[type="text"] {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 1em;
+        }
+        button {
+            background: #003366;
+            color: white;
+            padding: 10px 25px;
+            border: none;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #0055aa;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN FORM -->
+<div class="login-box" id="loginBox">
+    <h2>Student Login</h2>
+    <input type="text" id="admNoInput" placeholder="Enter Admission Number">
+    <br>
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboardContainer" class="hidden">
+
+    <div class="topbar">
+        Welcome, <span id="studentName"></span>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h3>Academics</h3>
+            <ul>
+                <li>Personal Profile</li>
+                <li>Student Pathway</li>
+                <li>TimeTable</li>
+                <li>Subject Combination</li>
+            </ul>
+
+            <h3>Financials</h3>
+            <ul>
+                <li>Fee Statement</li>
+                <li>Receipts</li>
+            </ul>
+
+            <h3>Accommodation</h3>
+            <ul>
+                <li>Class Stream</li>
+            </ul>
+
+            <h3>Examination</h3>
+            <ul>
+                <li>Results</li>
+            </ul>
+        </div>
+
+        <div class="content">
+            <h2>Welcome to your Student Dashboard</h2>
+            <p><strong>Admission No:</strong> <span id="admNo"></span></p>
+            <p><strong>Student Name:</strong> <span id="fullName"></span></p>
+            <p><strong>Student Pathway:</strong> <span id="pathway"></span></p>
+            <p><strong>Class Stream:</strong> <span id="stream"></span></p>
+
+            <h3>Subject Combination</h3>
+            <ul id="subjectList"></ul>
+
+            <h3>Results</h3>
+            <div id="results"></div>
+
+            <h3>Fee Statement</h3>
+            <p><strong>Total Fees:</strong> KES <span id="totalFees"></span></p>
+            <p><strong>Paid:</strong> KES <span id="paidFees"></span></p>
+            <p><strong>Balance:</strong> KES <span id="balance"></span></p>
+
+            <h3>Receipts</h3>
+            <ul id="receiptList"></ul>
+
+            <button onclick="logout()" style="margin-top:20px; background:#900; padding:10px 20px;">Logout</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// LOGIN FUNCTION
+function login() {
+    const admNo = document.getElementById('admNoInput').value.trim();
+    const students = JSON.parse(localStorage.getItem('students')) || {};
+
+    if (!admNo) {
+        alert('Please enter your Admission Number.');
+        return;
+    }
+
+    if (!students[admNo]) {
+        alert('Admission Number not found. Contact administration.');
+        return;
+    }
+
+    // Save logged in student
+    localStorage.setItem('loggedInStudent', admNo);
+
+    // Show dashboard & load data
+    showDashboard(admNo);
+}
+
+// SHOW DASHBOARD FUNCTION
+function showDashboard(admNo) {
+    const students = JSON.parse(localStorage.getItem('students'));
+    const student = students[admNo];
+
+    // Hide login, show dashboard
+    document.getElementById('loginBox').classList.add('hidden');
+    document.getElementById('dashboardContainer').classList.remove('hidden');
+
+    // Fill topbar
+    document.getElementById('studentName').innerText = student.name;
+
+    // Fill student info
+    document.getElementById('admNo').innerText = admNo;
+    document.getElementById('fullName').innerText = student.name;
+    document.getElementById('pathway').innerText = student.pathway;
+    document.getElementById('stream').innerText = student.stream;
+
+    // Subject Combination
+    const subjectList = document.getElementById('subjectList');
+    subjectList.innerHTML = '';
+    student.subjects.forEach(sub => {
+        const li = document.createElement('li');
+        li.innerText = sub;
+        subjectList.appendChild(li);
+    });
+
+    // Results - Show per term with subjects and grades
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = '';
+
+    ['term1', 'term2', 'term3'].forEach(term => {
+        const termResults = student.results[term] || {};
+        let html = `<h4>${term.toUpperCase()}</h4><table border="1" cellpadding="5" cellspacing="0" style="border-collapse:collapse; width: 100%;"><tr><th>Subject</th><th>Grade</th></tr>`;
+
+        for (const subject in termResults) {
+            html += `<tr><td>${subject}</td><td>${termResults[subject]}</td></tr>`;
+        }
+        html += '</table>';
+        resultsDiv.innerHTML += html;
+    });
+
+    // Fees
+    document.getElementById('totalFees').innerText = student.fees.total;
+    document.getElementById('paidFees').innerText = student.fees.paid;
+    document.getElementById('balance').innerText = student.fees.total - student.fees.paid;
+
+    // Receipts
+    const receiptList = document.getElementById('receiptList');
+    receiptList.innerHTML = '';
+    student.receipts.forEach(r => {
+        const li = document.createElement('li');
+        li.innerText = r;
+        receiptList.appendChild(li);
+    });
+}
+
+// LOGOUT FUNCTION
+function logout() {
+    localStorage.removeItem('loggedInStudent');
+    // Refresh page to login screen
+    location.reload();
+}
+
+// AUTO-LOGIN if student already logged in
+window.onload = function() {
+    const loggedInAdm = localStorage.getItem('loggedInStudent');
+    if (loggedInAdm) {
+        showDashboard(loggedInAdm);
+    }
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="topbar">
+    <span id="studentName"></span>
+</div>
+
+<div class="container">
+    <div class="sidebar">
+        <h3>Academics</h3>
+        <ul><ul class="menu">
+  <li onclick="showProfile()">Personal Profile</li>
+  <li onclick="showPathway()">Student Pathway</li>
+  <li onclick="showTimetable()">TimeTable</li>
+  <li onclick="showSubjects()">Subject Combination</li>
+
+  <h4>Financials</h4>
+  <li onclick="showFees()">Fee Statement</li>
+  <li onclick="showReceipts()">Receipts</li>
+
+  <h4>Accommodation</h4>
+  <li onclick="showStream()">Class Stream</li>
+
+  <h4>Examination</h4>
+  <li onclick="showResults()">Results</li>
+  </button>
+    </div>
+    <div id="content-area">
+  <h2>Welcome</h2>
+  <p>Select a menu item to view details.</p>
+</div>
+
+<script src="js/dashboard.js"></script>
+    </div>
+</div>
+
+<script src="dashboard.js"></script>
+</body>
+</html>

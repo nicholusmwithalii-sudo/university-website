@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+    }
+    h1, h2, h3 {
+      color: #333;
+    }
+    input, select {
+      padding: 8px 12px;
+      margin: 8px 0;
+      width: 250px;
+      max-width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #0077cc;
+      border: none;
+      color: white;
+      padding: 12px 25px;
+      margin: 10px 8px 10px 0;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      min-width: 110px;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    button.logout {
+      background-color: #d9534f;
+    }
+    button.logout:hover {
+      background-color: #b52b27;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    #studentListContainer {
+      margin-top: 25px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 15px;
+      background: white;
+      display: none;
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    table, th, td {
+      border: 1px solid #aaa;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #0077cc;
+      color: white;
+      position: sticky;
+      top: 0;
+    }
+    #optionalSubjectsContainer label {
+      display: block;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Admin Dashboard</h1>
+
+  <!-- Student Registration / Editing Form -->
+  <div>
+    <div class="form-group">
+      <input id="adm" type="text" placeholder="Admission Number" />
+    </div>
+
+    <div class="form-group">
+      <input id="name" type="text" placeholder="Student Name" />
+    </div>
+    <div class="form-group">
+      <label for="pathway">Student Pathway:</label><br />
+      <select id="pathway">
+        <option value="">-- Select Pathway --</option>
+        <option value="Social Sciences">Social Sciences</option>
+        <option value="STEM">STEM</option>
+        <option value="Arts and Sports">Arts and Sports</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="stream">Class Stream:</label><br />
+      <select id="stream">
+        <option value="">-- Select Stream --</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+      </select>
+    </div>
+
+    <button onclick="saveStudent()">Save Student</button>
+  </div>
+
+  <hr />
+
+  <!-- Navigation & View Buttons -->
+  <div>
+    <button onclick="previousStudent()">Previous</button>
+    <button onclick="nextStudent()">Next</button>
+    <button onclick="viewStudentsList()">View Registered Students</button>
+    <button onclick="logout()" class="logout">Logout</button>
+  </div>
+    <h2>Online Applications</h2>
+
+<table id="applicationsTable">
+  <thead>
+    <tr>
+      <th>App No</th>
+      <th>Name</th>
+      <th>County</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+  <!-- Student List Display -->
+  <div id="studentListContainer">
+    <h3>Registered Students</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Admission No.</th>
+          <th>Name</th>
+          <th>Pathway</th>
+          <th>Stream</th>
+          <th>Subject Combination</th>
+        </tr>
+      </thead>
+      <tbody id="studentListBody">
+        <!-- Filled dynamically -->
+      </tbody>
+    </table>
+  </div>
+
+  <hr />
+
+  <!-- Subject Combinations Manager -->
+  <h2>Manage Subject Combinations</h2>
+
+  <div>
+    <label for="comboPathway">Select Pathway:</label>
+    <select id="comboPathway" onchange="loadPathwaySubjects()">
+      <option value="">-- Select Pathway --</option>
+      <option value="STEM">STEM</option>
+      <option value="Social Sciences">Social Sciences</option>
+      <option value="Arts and Sports">Arts and Sports</option>
+    </select>
+  </div>
+
+  <div id="optionalSubjectsContainer" style="margin-top:10px;">
+    <i>Select a pathway to see optional subjects.</i>
+  </div>
+
+  <button onclick="saveSubjectCombination()" style="margin-top:10px;">Save Subject Combination</button>
+
+  <script>
+    // === Initialization ===
+    let students = JSON.parse(localStorage.getItem("students")) || {};
+    let admNumbers = Object.keys(students);
+    let currentIndex = 0;
+
+    // Store subject combinations per pathway in localStorage
+    let subjectCombinations = JSON.parse(localStorage.getItem("subjectCombinations")) || {};
+
+    // Compulsory subjects always included
+    const compulsorySubjects = ["English", "Kiswahili", "Mathematics"];
+
+    // Optional subjects by pathway
+    const pathwayOptions = {
+      "STEM": ["Physics", "Chemistry", "Biology", "Computer Science"],
+      "Social Sciences": ["History", "Geography", "Business Studies", "Economics", "Government"],
+      "Arts and Sports": ["Art", "Music", "Drama", "Physical Education", "Home Science"]
+    };
+
+    // Load student data into form fields
+    function loadStudent(admNo) {
+      const student = students[admNo];
+      if (!student) {
+        alert("Student not found.");
+        return;
+      }
+      document.getElementById("adm").value = admNo;
+      document.getElementById("name").value = student.name;
+      document.getElementById("pathway").value = student.pathway;
+      document.getElementById("stream").value = student.stream;
+      currentIndex = admNumbers.indexOf(admNo);
+    }
+
+    // Clear the form for new student registration
+    function clearForm() {
+      document.getElementById("adm").value = "";
+      document.getElementById("name").value = "";
+      document.getElementById("pathway").value = "";
+      document.getElementById("stream").value = "";
+    }
+
+    // Save or update student information
+     function saveStudent() {
+  const adm = document.getElementById("adm").value.trim();
+  if (!adm) {
+    alert("Admission number required.");
+    return;
+  }
+
+  // Check for duplicate admission number if adding a new student
+  if (students.hasOwnProperty(adm) && currentIndex !== admNumbers.indexOf(adm)) {
+    alert("Error: This Admission Number is already registered!");
+    return;
+  }
+
+  const pathway = document.getElementById("pathway").value;
+  if (!pathway) {
+    alert("Please select a pathway.");
+    return;
+  }
+  const optionalSubjects = subjectCombinations[pathway] || [];
+  const allSubjects = [...compulsorySubjects, ...optionalSubjects];
+
+  students[adm] = {
+    name: document.getElementById("name").value.trim(),
+    pathway: pathway,
+    stream: document.getElementById("stream").value,
+    subjects: allSubjects,
+    results: { term1: {}, term2: {}, term3: {} },
+    fees: { total: 50000, paid: 0 },
+    receipts: []
+  };
+  localStorage.setItem("students", JSON.stringify(students));
+  admNumbers = Object.keys(students);
+  currentIndex = admNumbers.indexOf(adm);
+  alert("Student saved successfully!");
+}
+    // Move to next student or blank form after last student
+    function nextStudent() {
+      if (admNumbers.length === 0) {
+        clearForm();
+        currentIndex = -1;
+        return;
+      }
+
+      if (currentIndex < admNumbers.length - 1) {
+        currentIndex++;
+        loadStudent(admNumbers[currentIndex]);
+      } else {
+        clearForm();
+        currentIndex = -1; // blank form
+      }
+    }
+
+    // Move to previous student or last student if currently blank
+    function previousStudent() {
+      if (admNumbers.length === 0) {
+        alert("No students found.");
+        return;
+      }
+
+      if (currentIndex === -1) {
+        currentIndex = admNumbers.length - 1;
+        loadStudent(admNumbers[currentIndex]);
+      } else if (currentIndex > 0) {
+        currentIndex--;
+        loadStudent(admNumbers[currentIndex]);
+      } else {
+        loadStudent(admNumbers[0]);
+      }
+    }
+
+    // Show/hide the registered students list
+    function viewStudentsList() {
+      const container = document.getElementById("studentListContainer");
+      const tbody = document.getElementById("studentListBody");
+
+      // Clear current table rows
+      tbody.innerHTML = "";
+
+      if (admNumbers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No students registered yet.</td></tr>`;
+      } else {
+        admNumbers.forEach(admNo => {
+          const student = students[admNo];
+          const combination = student.subjects ? student.subjects.join(", ") : "N/A";
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${admNo}</td>
+            <td>${student.name}</td>
+            <td>${student.pathway}</td>
+            <td>${student.stream}</td>
+            <td>${combination}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+
+      // Toggle visibility
+      if (container.style.display === "none" || container.style.display === "") {
+        container.style.display = "block";
+      } else {
+        container.style.display = "none";
+      }
+    }
+
+    // Logout and redirect to login page
+    function logout() {
+      localStorage.removeItem("adminLoggedIn");
+      window.location.href = "admin-login.html";
+    }
+
+    // Load optional subjects checkboxes based on selected pathway
+    function loadPathwaySubjects() {
+      const pathway = document.getElementById("comboPathway").value;
+      const container = document.getElementById("optionalSubjectsContainer");
+      container.innerHTML = "";
+
+      if (!pathway || !pathwayOptions[pathway]) {
+        container.innerHTML = "<i>Select a pathway to see optional subjects.</i>";
+        return;
+      }
+
+      const savedSubjects = subjectCombinations[pathway] || [];
+
+      container.innerHTML = `<strong>Compulsory subjects (always included): ${compulsorySubjects.join(", ")}</strong><br><br>`;
+
+      pathwayOptions[pathway].forEach(subject => {
+        // Skip compulsory subjects if in optional list to avoid duplication
+        if (compulsorySubjects.includes(subject)) return;
+
+        // Create checkbox for optional subjects
+        const checked = savedSubjects.includes(subject) ? "checked" : "";
+        container.innerHTML += `
+          <label>
+            <input type="checkbox" value="${subject}" ${checked} />
+            ${subject}
+          </label>
+        `;
+      });
+    }
+
+    // Save subject combination for the selected pathway
+    function saveSubjectCombination() {
+      const pathway = document.getElementById("comboPathway").value;
+      if (!pathway) {
+        alert("Please select a pathway first.");
+        return;
+      }
+
+      const container = document.getElementById("optionalSubjectsContainer");
+      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+      const selectedSubjects = [];
+
+      checkboxes.forEach(cb => {
+        if (cb.checked) selectedSubjects.push(cb.value);
+      });
+
+      subjectCombinations[pathway] = selectedSubjects;
+      localStorage.setItem("subjectCombinations", JSON.stringify(subjectCombinations));
+
+      alert(`Subject combination saved for pathway: ${pathway}`);
+    }
+
+    // On page load: check login and load first student + load subject combos UI
+    window.onload = function () {
+      if (!localStorage.getItem("adminLoggedIn")) {
+        window.location.href = "admin-login.html";
+      }
+      students = JSON.parse(localStorage.getItem("students")) || {};
+      admNumbers = Object.keys(students);
+      if (admNumbers.length > 0) {
+        loadStudent(admNumbers[0]);
+      } else {
+        clearForm();
+        currentIndex = -1;
+      }
+      loadPathwaySubjects();
+    };
+  </script>
+
+</body>
+</html>
